@@ -37,6 +37,9 @@ const EnvelopeItem = ({
   const spentHealthTextColorClassName = spentActivePeriod !== undefined &&
     targetSpend < spentActivePeriod ?
     'text-red-500' : 'text-green-500';
+  const onLogSpendFormSubmit = (amount:number, periodType: ActivePeriodType): void => {
+    console.log('onLogSpendFormSubmit', amount, periodType)
+  };
   return (
     <div className={`bg-white py-5 border-b border-gray-200 sm:px-2`}>
       <div className="
@@ -54,7 +57,7 @@ const EnvelopeItem = ({
             {' '}
             {name}
           </h3>
-          <p className="mt-1 ml-5 text-sm text-gray-400">
+          <div className="mt-1 ml-5 text-sm text-gray-400">
             {
               spentActivePeriod !== undefined ?
               <>
@@ -71,7 +74,7 @@ const EnvelopeItem = ({
                 </a>
               </span>
             }
-          </p>
+          </div>
         </div>
         <div className="ml-4 text-xl flex-shrink-0 text-right">
           {
@@ -107,16 +110,39 @@ const EnvelopeItem = ({
         </div>
       </div>
       {
-        startLog.get() && <LogSpendForm />
+        startLog.get() && <LogSpendForm onSubmit={onLogSpendFormSubmit} period={period} />
       }
     </div>
   )
 }
 
-const LogSpendForm = () => {
+const toPeriodLabel = (period: EnvelopePeriod): string => {
+  switch (period) {
+    case EnvelopePeriod.Week:
+      return 'week'
+    case EnvelopePeriod.Month:
+      return 'month'
+    case EnvelopePeriod.Year:
+      return 'year'
+    default:
+      return 'UNDEFINED PERIOD LABEL ERROR'
+  }
+}
+
+const periodLoggedLabel = (period: EnvelopePeriod) => ({
+  [ActivePeriodType.This]: `This ${toPeriodLabel(period)}`,
+  [ActivePeriodType.Last]: `Last ${toPeriodLabel(period)}`,
+});
+
+const LogSpendForm = ({ onSubmit, period }: {
+  onSubmit: (amount: number, periodType: ActivePeriodType) => void,
+  period: EnvelopePeriod
+}) => {
   const amountState = useState(0)
   const amountOnFocus = useState(false)
   const amountChangeBlur = useState(false)
+  const activePeriodType = useState(ActivePeriodType.This)
+  console.log('activePeriodType', activePeriodType.get())
   const amountDeltaOnClickFn = (delta: number) => () => {
     amountState.set(amountState.get() + delta)
     amountChangeBlur.set(true)
@@ -186,22 +212,26 @@ const LogSpendForm = () => {
               className="h-10 w-10" /> 
           </button>
         </span>
-        <button type="button"
-        style={{marginTop: 2, width: 150}}
-        className={classNames(
-          'inline-block',
-          'w-full py-2.5 mr-2 ml-5 mr-4 text-sm leading-5 font-medium text-black rounded-lg',
-          'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-gray-800 ring-white ring-opacity-60',
-          'bg-gray-800 hover:bg-gray-700 ease-in text-white px-3'
-        )}>
+        <button type="submit"
+          style={{marginTop: 2, width: 150}}
+          onClick={() => onSubmit(amountState.get(), activePeriodType.get())}
+          className={classNames(
+            'inline-block',
+            'w-full py-2.5 mr-2 ml-5 mr-4 text-sm leading-5 font-medium text-black rounded-lg',
+            'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-gray-800 ring-white ring-opacity-60',
+            'bg-gray-800 hover:bg-gray-700 ease-in text-white px-3'
+          )}>
           Log Spend
         </button>
         <span className="inline-block md:ml-0 ml-6" style={{width: 225}}>
-          <Tab.Group>
+          <Tab.Group onChange={(index: number) => {
+            const periodType = Object.keys(periodLoggedLabel(period))[index]
+            activePeriodType.set(periodType as ActivePeriodType)
+          }}>
             <Tab.List className="flex p-1 bg-gray-800 rounded-xl">
-              {['This month', 'Last month'].map((periodName) => (
+              {Object.keys(periodLoggedLabel(period)).map((periodType: string) => (
                 <Tab
-                  key={periodName}
+                  key={periodType}
                   className={({ selected }) =>
                     classNames(
                       'w-full py-2 text-sm leading-5 font-medium text-black rounded-lg',
@@ -212,7 +242,7 @@ const LogSpendForm = () => {
                     )
                   }
               >
-                {periodName}
+                {periodLoggedLabel(period)[periodType as ActivePeriodType]}
               </Tab>
             ))}
           </Tab.List>
@@ -220,7 +250,7 @@ const LogSpendForm = () => {
         </span>
       </div>
       <div className="flex-shrink-0">
-        <div className="mt-3" style={{marginLeft: 20}}>
+        <div className="mt-4" style={{marginLeft: 16}}>
           <span className="relative z-0 bg-gray-700 text-white inline-flex shadow-sm rounded-md">
             <button
               type="button"
