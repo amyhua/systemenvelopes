@@ -41,14 +41,17 @@ const EnvelopeItem = ({
   const onLogSpendFormSubmit = (amount:number, periodType: ActivePeriodType): void => {
     console.log('onLogSpendFormSubmit', amount, periodType)
   }
-  const onLogSpendFormCancel = () => startLog.set(false)
+  const onLogSpendFormCancel = () => {
+    console.log('cancel')
+    startLog.set(false)
+  }
   return (
     <div className={`bg-white py-5 border-b border-gray-200 sm:px-2`}>
       <div className="
         cursor-pointer
         -ml-4 flex justify-between items-center
         flex-wrap sm:flex-nowrap"
-      onClick={() => startLog.set(!startLog.get())}>
+      onClick={() => startLog.set(true)}>
         <div className="ml-4">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
             {
@@ -111,12 +114,14 @@ const EnvelopeItem = ({
           </button>
         </div>
       </div>
-      <LogSpendForm
-        onSubmit={onLogSpendFormSubmit}
-        onCancelForm={onLogSpendFormCancel}
-        period={period}
-        cancellingFromParent={startLog.get()}
-      />
+      {
+        startLog.get() &&
+        <LogSpendForm
+          onSubmit={onLogSpendFormSubmit}
+          onCancelForm={onLogSpendFormCancel}
+          period={period}
+        />
+      }
     </div>
   )
 }
@@ -139,33 +144,26 @@ const periodLoggedLabel = (period: EnvelopePeriod) => ({
   [ActivePeriodType.Last]: `Last ${toPeriodLabel(period)}`,
 });
 
-const LogSpendForm = ({ onSubmit, period, onCancelForm, cancellingFromParent }: {
+const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
   onSubmit: (amount: number, periodType: ActivePeriodType) => void,
   period: EnvelopePeriod,
-  onCancelForm: () => void,
-  cancellingFromParent: boolean
+  onCancelForm: () => void
 }) => {
   const amountState = useState(0)
   const amountOnFocus = useState(false)
   const amountChangeBlur = useState(false)
-  const cancelling = useState(cancellingFromParent)
+  const cancelling = useState(false)
   const activePeriodType = useState(ActivePeriodType.This)
   const amountDeltaOnClickFn = (delta: number) => () => {
     amountState.set(amountState.get() + delta)
     amountChangeBlur.set(true)
   }
-  const resetState = () => {
-    amountState.set(0)
-    amountOnFocus.set(false)
-    amountChangeBlur.set(false)
-    cancelling.set(cancellingFromParent)
-  }
   if (amountChangeBlur.get()) {
     setTimeout(() => amountChangeBlur.set(false), 75);
   }
   return (
-    <div className={`spend-form ml-2 mt-5 mb-5 h-auto ${
-      (cancellingFromParent || cancelling.get()) ? styles.cancelling : ''
+    <div className={`${styles.logSpendForm} spend-form ml-2 mt-5 mb-5 h-auto ${
+      cancelling.get() ? styles.cancelling : ''
     }`} style={{
       overflow: 'hidden',
       transition: 'height 0.3s ease-in-out, margin-top 0.3s ease-in-out, margin-bottom 0.3s ease-in-out'
@@ -182,10 +180,7 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm, cancellingFromParent }: 
           >
             <MinusCircleIcon
               onClick={() => {
-                amountState.set(
-                  amountState.get() - 1 >= 0 ?
-                  amountState.get() - 1 : 0
-                )
+                amountState.set(amountState.get() - 1)
                 amountChangeBlur.set(true)
               }}
               className="h-10 w-10" /> 
@@ -207,7 +202,11 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm, cancellingFromParent }: 
               onClick={() => amountOnFocus.set(true)}
               className="text-center inline-block mt-1 text-gray-700 text-4xl">
                 <span className={`
-                  ${amountChangeBlur.get() ? 'text-green-500' : 'text-black'} 
+                  ${amountChangeBlur.get() ? (
+                    amountState.get() < 0 ? 'text-green-500' : 'text-red-500'
+                  ) : 
+                    'text-gray-700'
+                  } 
                   ease-in-out
                 `}>
                   ${amountState.get().toLocaleString()}
@@ -219,7 +218,7 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm, cancellingFromParent }: 
             className="relative inline-flex items-center
               mr-1 align-top mt-1
               font-medium
-              text-gray-700 hover:text-green-500
+              text-gray-700 hover:text-red-500
               "
           >
             <PlusCircleIcon
@@ -239,7 +238,10 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm, cancellingFromParent }: 
             'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-gray-800 ring-white ring-opacity-60',
             'bg-gray-800 hover:bg-gray-700 ease-in text-white px-3'
           )}>
-          Log Spend
+            {
+              amountState.get() < 0 ?
+              'Log Addition' : 'Log Spend'
+            }
         </button>
         <span className="inline-block md:ml-0 ml-6" style={{width: 225}}>
           <Tab.Group onChange={(index: number) => {
@@ -330,8 +332,7 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm, cancellingFromParent }: 
             cancelling.set(true)
             setTimeout(() => {
               onCancelForm()
-              resetState()
-            }, 300)
+            }, 500)
           }}
           className="underline text-gray-500 hover:text-gray-800">Cancel</a>
         </div>
