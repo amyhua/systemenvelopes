@@ -2,7 +2,7 @@
   "name": "systemenvelopes",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently 'next dev' 'json-server --watch db.json'",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

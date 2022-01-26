@@ -34,16 +34,23 @@ const EnvelopeItem = ({
   periodType: ActivePeriodType,
 }) => {
   const startLog: State = useState(false);
+  const loggedSpendBlur: State = useState(false);
   const periodPronoun = periodType === ActivePeriodType.This ? 'this' : 'last';
   const spentHealthTextColorClassName = spentActivePeriod !== undefined &&
     targetSpend < spentActivePeriod ?
     'text-red-500' : 'text-green-500';
   const onLogSpendFormSubmit = (amount:number, periodType: ActivePeriodType): void => {
     console.log('onLogSpendFormSubmit', amount, periodType)
+    loggedSpendBlur.set(true)
   }
   const onLogSpendFormCancel = () => {
     console.log('cancel')
     startLog.set(false)
+  }
+  if (loggedSpendBlur.get()) {
+    setTimeout(() => {
+      loggedSpendBlur.set(false)
+    }, 500)
   }
   return (
     <div className={`bg-white py-5 border-b border-gray-200 sm:px-2`}>
@@ -67,7 +74,11 @@ const EnvelopeItem = ({
               spentActivePeriod !== undefined ?
               <>
                 <div className="ml-2">
-                  <span className={`font-semibold ${spentHealthTextColorClassName}`}>${(targetSpend - spentActivePeriod).toFixed(2).toLocaleString()}</span> {
+                  <span className={classNames(
+                    `font-semibold transition`,
+                    spentHealthTextColorClassName,
+                    loggedSpendBlur.get() ? `bg-yellow-50` : `bg-white`,
+                  )}>${(targetSpend - spentActivePeriod).toFixed(2).toLocaleString()}</span> {
                     targetSpend < spentActivePeriod ? 'exceeded' : 'left to spend'
                   } {periodPronoun} {period}
                 </div>
@@ -81,9 +92,15 @@ const EnvelopeItem = ({
         <div className="ml-4 text-xl flex-shrink-0 text-right">
           {
             spentActivePeriod !== undefined ?
-            <span className="font-normal text-gray-400 mr-1">
-              ${(spentActivePeriod || 0).toFixed(2).toLocaleString()} / 
-            </span>
+            <>
+            <span className={classNames(
+              'font-normal',
+              spentActivePeriod > targetSpend ? 'text-red-600' : 'text-gray-400',
+              loggedSpendBlur.get() ? `bg-yellow-50` : `bg-white`,
+            )}>
+              ${(spentActivePeriod || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}
+            </span><span className="text-gray-400">/</span>
+            </>
             : null
           }
           <span className="mr-2 font-semibold text-right">
@@ -156,7 +173,6 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
     amountChangeBlur.set(true)
   }
   const onCancelHandler = () => {
-    amountState.set(0)
     cancelling.set(true)
     setTimeout(() => {
       onCancelForm()
@@ -177,7 +193,7 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
         onSubmit(amountState.get(), activePeriodType.get())
         onCancelHandler()
       }}>
-        <div className="mb-1 mt-3">
+        <div className="mb-1 mt-5">
           <span className="inline-block align-middle mb-2">
             <button
               type="button"

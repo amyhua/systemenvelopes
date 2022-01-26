@@ -13,11 +13,19 @@
     "id": 10,
     "budget_id": 2,
     "name": "Groceries",
-    "target": 200
+    "target": 200,
+    "spent": 190.5
   }, {
     "id": 11,
     "budget_id": 2,
     "name": "Entertainment",
-    "target": 300
+    "target": 300,
+    "spent": 100
+  }, {
+    "id": 12,
+    "budget_id": 2,
+    "name": "Replenish House",
+    "target": 150,
+    "spent": 40.5
   }]
 }
