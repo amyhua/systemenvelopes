@@ -1,0 +1,23 @@
+{
+  "users": [{
+    "id": 1,
+    "username": "Amy"
+  }],
+  "budgets": [{
+    "id": 2,
+    "user_id": 1,
+    "period": "month",
+    "name": "Monthly"
+  }],
+  "budget_items": [{
+    "id": 10,
+    "budget_id": 2,
+    "name": "Groceries",
+    "target": 200
+  }, {
+    "id": 11,
+    "budget_id": 2,
+    "name": "Entertainment",
+    "target": 300
+  }]
+}
