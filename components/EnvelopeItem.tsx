@@ -73,10 +73,7 @@ const EnvelopeItem = ({
                 </div>
               </> :
               <span className="ml-2">
-                <em>None logged {periodPronoun} {period}</em> <a href="#"
-                  className="text-link text-gray-600 px-1 hover:text-gray-800">
-                  add log
-                </a>
+                <em>Nothing logged {periodPronoun} {period}</em>
               </span>
             }
           </div>
@@ -158,6 +155,13 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
     amountState.set(amountState.get() + delta)
     amountChangeBlur.set(true)
   }
+  const onCancelHandler = () => {
+    amountState.set(0)
+    cancelling.set(true)
+    setTimeout(() => {
+      onCancelForm()
+    }, 500)
+  }
   if (amountChangeBlur.get()) {
     setTimeout(() => amountChangeBlur.set(false), 75);
   }
@@ -200,7 +204,9 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
             <span
               style={{width: 150}}
               onClick={() => amountOnFocus.set(true)}
-              className="text-center inline-block mt-1 text-gray-700 text-4xl">
+              className={`text-center inline-block text-gray-700 ${
+                amountState.get() > 999 ? 'mt-2 text-2xl' : 'mt-1 text-4xl'
+              }`}>
                 <span className={`
                   ${amountChangeBlur.get() ? (
                     amountState.get() < 0 ? 'text-green-500' : 'text-red-500'
@@ -209,7 +215,9 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
                   } 
                   ease-in-out
                 `}>
-                  ${amountState.get().toLocaleString()}
+                  ${
+                    Number(amountState.get().toFixed(2)).toLocaleString(undefined, {minimumFractionDigits: 2})
+                  }
                 </span>
             </span>
           }
@@ -231,7 +239,10 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
         </span>
         <button type="submit"
           style={{marginTop: 2, width: 150}}
-          onClick={() => onSubmit(amountState.get(), activePeriodType.get())}
+          onClick={() => {
+            onSubmit(amountState.get(), activePeriodType.get())
+            onCancelHandler()
+          }}
           className={classNames(
             'inline-block',
             'w-full py-2.5 mr-2 ml-5 mr-4 text-sm leading-5 font-medium text-black rounded-lg',
@@ -276,49 +287,49 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
               type="button"
               onClick={amountDeltaOnClickFn(5)}
               className="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50
-                focus:z-10 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
             >
               +$5
             </button>
             <button
               type="button"
               onClick={amountDeltaOnClickFn(10)}
-              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
             >
               +$10
             </button>
             <button
               type="button"
               onClick={amountDeltaOnClickFn(50)}
-              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
             >
               +$50
             </button>
             <button
               type="button"
               onClick={amountDeltaOnClickFn(100)}
-              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
             >
               +$100
             </button>
             <button
               type="button"
               onClick={amountDeltaOnClickFn(500)}
-              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
             >
               +$500
             </button>
             <button
               type="button"
               onClick={amountDeltaOnClickFn(1000)}
-              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
             >
               +$1K
             </button>
             <button
               type="button"
               onClick={amountDeltaOnClickFn(5000)}
-              className="-ml-px relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500"
+              className="-ml-px relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
             >
               +$5K
             </button>
@@ -326,14 +337,7 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
         </div>
         <div className="mt-4 ml-5 text-sm">
           <a href="#"
-          onClick={(e) => {
-            e.preventDefault()
-            amountState.set(0)
-            cancelling.set(true)
-            setTimeout(() => {
-              onCancelForm()
-            }, 500)
-          }}
+          onClick={onCancelHandler}
           className="underline text-gray-500 hover:text-gray-800">Cancel</a>
         </div>
       </div>
