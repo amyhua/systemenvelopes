@@ -1,15 +1,51 @@
 import { useRouter } from 'next/router'
+import { useState, State } from '@hookstate/core';
 
 import styles from './user.module.css'
 import { MailOpenIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, MailIcon } from '@heroicons/react/outline'
 import EnvelopeItem, { EnvelopePeriod, ActivePeriodType } from '../../components/EnvelopeItem'
+import { useEffect } from 'react'
 
+const API_URL = 'http://localhost:5000'
 
+interface BudgetItem {
+  id: string;
+  user_id: number;
+  budget_id: number;
+  name: string;
+  target: number;
+  spent: number;
+}
 
 const User = () => {
   const router = useRouter()
   const { username } = router.query
+  const budgetItemsState: State = useState([] as BudgetItem[])
+
+  useEffect(() => {
+    if (username) {
+      fetch(`${API_URL}/users?username=${username}`)
+      .then(r => r.json())
+      .then(([user]) => {
+        if (user) {
+          const [firstBudgetId] = user.budget_ids;
+          if (firstBudgetId) return firstBudgetId;
+        }
+      })
+      .then(budgetId => {
+        if (budgetId === undefined) return;
+        return fetch(`${API_URL}/budget_items?budget_id=${budgetId}`)
+      })
+      .then(r => r.json())
+      .then(budgetItems => {
+        console.log('items', budgetItems)
+        budgetItemsState.set(budgetItems)
+      })
+    }
+  }, [username])
+  if (budgetItemsState.get().length == 0) return null;
+  console.log('log', budgetItemsState.get())
 
   return (
     <main className="md:container my-5 mx-auto">
@@ -42,9 +78,17 @@ const User = () => {
             last month
           </button>
         </nav>
-        <EnvelopeItem name="Groceries" period={EnvelopePeriod.Month} periodType={ActivePeriodType.This} spentActivePeriod={190.5} targetSpend={200} />
-        <EnvelopeItem name="Entertainment" period={EnvelopePeriod.Month} periodType={ActivePeriodType.This} spentActivePeriod={100} targetSpend={300} />
-        <EnvelopeItem name="Replenish House" period={EnvelopePeriod.Month} periodType={ActivePeriodType.This} targetSpend={300} />
+        {
+          budgetItemsState.map((itemState: State, i: number) => {
+            const item = itemState.get() as BudgetItem
+            return <EnvelopeItem key={i} name={item.name}
+              period={EnvelopePeriod.Month}
+              periodType={ActivePeriodType.This}
+              spentActivePeriod={item.spent}
+              targetSpend={item.target}
+            />
+          })
+        }
       </div>
     </main>
   )

@@ -1,7 +1,8 @@
 {
   "users": [{
     "id": 1,
-    "username": "Amy"
+    "username": "amy",
+    "budget_ids": [2]
   }],
   "budgets": [{
     "id": 2,
@@ -11,18 +12,21 @@
   }],
   "budget_items": [{
     "id": 10,
+    "user_id": 1,
     "budget_id": 2,
     "name": "Groceries",
     "target": 200,
     "spent": 190.5
   }, {
     "id": 11,
+    "user_id": 1,
     "budget_id": 2,
     "name": "Entertainment",
     "target": 300,
     "spent": 100
   }, {
     "id": 12,
+    "user_id": 1,
     "budget_id": 2,
     "name": "Replenish House",
     "target": 150,
