@@ -4,6 +4,7 @@ import { MailIcon, MailOpenIcon, PencilIcon, PlusCircleIcon, MinusCircleIcon } f
 import { ChartBarIcon, PlusIcon, CurrencyDollarIcon } from '@heroicons/react/solid'
 import LogSpendButton from './LogSpendButton';
 import { classNames } from '../utils/app-utils';
+import styles from './EnvelopeItem.module.css';
 
 interface EnvelopeItemDatum {
   name: string;
@@ -39,7 +40,8 @@ const EnvelopeItem = ({
     'text-red-500' : 'text-green-500';
   const onLogSpendFormSubmit = (amount:number, periodType: ActivePeriodType): void => {
     console.log('onLogSpendFormSubmit', amount, periodType)
-  };
+  }
+  const onLogSpendFormCancel = () => startLog.set(false)
   return (
     <div className={`bg-white py-5 border-b border-gray-200 sm:px-2`}>
       <div className="
@@ -109,9 +111,12 @@ const EnvelopeItem = ({
           </button>
         </div>
       </div>
-      {
-        startLog.get() && <LogSpendForm onSubmit={onLogSpendFormSubmit} period={period} />
-      }
+      <LogSpendForm
+        onSubmit={onLogSpendFormSubmit}
+        onCancelForm={onLogSpendFormCancel}
+        period={period}
+        cancellingFromParent={startLog.get()}
+      />
     </div>
   )
 }
@@ -134,24 +139,37 @@ const periodLoggedLabel = (period: EnvelopePeriod) => ({
   [ActivePeriodType.Last]: `Last ${toPeriodLabel(period)}`,
 });
 
-const LogSpendForm = ({ onSubmit, period }: {
+const LogSpendForm = ({ onSubmit, period, onCancelForm, cancellingFromParent }: {
   onSubmit: (amount: number, periodType: ActivePeriodType) => void,
-  period: EnvelopePeriod
+  period: EnvelopePeriod,
+  onCancelForm: () => void,
+  cancellingFromParent: boolean
 }) => {
   const amountState = useState(0)
   const amountOnFocus = useState(false)
   const amountChangeBlur = useState(false)
+  const cancelling = useState(cancellingFromParent)
   const activePeriodType = useState(ActivePeriodType.This)
-  console.log('activePeriodType', activePeriodType.get())
   const amountDeltaOnClickFn = (delta: number) => () => {
     amountState.set(amountState.get() + delta)
     amountChangeBlur.set(true)
+  }
+  const resetState = () => {
+    amountState.set(0)
+    amountOnFocus.set(false)
+    amountChangeBlur.set(false)
+    cancelling.set(cancellingFromParent)
   }
   if (amountChangeBlur.get()) {
     setTimeout(() => amountChangeBlur.set(false), 75);
   }
   return (
-    <div className="ml-2 mt-5 mb-5">
+    <div className={`spend-form ml-2 mt-5 mb-5 h-auto ${
+      (cancellingFromParent || cancelling.get()) ? styles.cancelling : ''
+    }`} style={{
+      overflow: 'hidden',
+      transition: 'height 0.3s ease-in-out, margin-top 0.3s ease-in-out, margin-bottom 0.3s ease-in-out'
+    }}>
       <div className="mb-1 mt-3">
         <span className="inline-block align-middle mb-2">
           <button
@@ -307,7 +325,13 @@ const LogSpendForm = ({ onSubmit, period }: {
         <div className="mt-4 ml-5 text-sm">
           <a href="#"
           onClick={(e) => {
-            e.preventDefault(); amountState.set(0)
+            e.preventDefault()
+            amountState.set(0)
+            cancelling.set(true)
+            setTimeout(() => {
+              onCancelForm()
+              resetState()
+            }, 300)
           }}
           className="underline text-gray-500 hover:text-gray-800">Cancel</a>
         </div>
