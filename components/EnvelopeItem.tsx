@@ -22,23 +22,49 @@ export enum ActivePeriodType {
   Last = 'last'
 }
 
+const EnvelopeProgressBar = ({
+  targetSpend,
+  spentActivePeriod
+}: {
+  targetSpend: number,
+  spentActivePeriod: number
+}) => {
+  const percent100 = Math.round((spentActivePeriod/targetSpend) * 100);
+  return (
+    <div className="inline-block align-top
+      mt-2
+      mr-2 bg-green-500 rounded-full" style={{width: 100}}>
+      <div
+        className={`bg-slate-500 text-xs opacity-0.6 font-medium text-slate-300 text-center p-0.25 leading-none rounded-l-full`}
+        style={{
+          width: percent100,
+          height: 5,
+        }}></div>
+    </div>
+  )
+}
+
 const EnvelopeItem = ({
-  name, spentActivePeriod,
-  targetSpend=0, period=EnvelopePeriod.Month,
-  periodType,
+  name,
+  targetSpend=0,
+  period=EnvelopePeriod.Month,
+  thisPeriodSpent=0,
+  lastPeriodSpent=0,
 }: {
   name: string,
   targetSpend: number,
-  spentActivePeriod?: number,
   period: EnvelopePeriod,
-  periodType: ActivePeriodType,
+  thisPeriodSpent: number,
+  lastPeriodSpent: number,
 }) => {
   const startLog: State = useState(false);
   const loggedSpendBlur: State = useState(false);
-  const periodPronoun = periodType === ActivePeriodType.This ? 'this' : 'last';
+  const periodType: State = useState(ActivePeriodType.This)
+  const spentActivePeriod = periodType.get() === ActivePeriodType.This ? thisPeriodSpent : lastPeriodSpent
   const spentHealthTextColorClassName = spentActivePeriod !== undefined &&
-    targetSpend < spentActivePeriod ?
-    'text-red-500' : 'text-green-500';
+  targetSpend < spentActivePeriod ?
+  'text-red-500' : 'text-green-500';
+  const periodPronoun = periodType.get() === ActivePeriodType.This ? 'this' : 'last'
   const onLogSpendFormSubmit = (amount:number, periodType: ActivePeriodType): void => {
     console.log('onLogSpendFormSubmit', amount, periodType)
     loggedSpendBlur.set(true)
@@ -73,14 +99,21 @@ const EnvelopeItem = ({
             {
               spentActivePeriod !== undefined ?
               <>
-                <div className="ml-2">
+                <div className={classNames(
+                  'ml-2',
+                  'md:mt-0 mt-1 align-bottom inline-block'
+                )}>
+                  <EnvelopeProgressBar targetSpend={targetSpend} spentActivePeriod={spentActivePeriod} />
                   <span className={classNames(
                     `font-semibold transition`,
                     spentHealthTextColorClassName,
                     loggedSpendBlur.get() ? `bg-yellow-50` : `bg-white`,
-                  )}>${(targetSpend - spentActivePeriod).toFixed(2).toLocaleString()}</span> {
-                    targetSpend < spentActivePeriod ? 'exceeded' : 'left to spend'
-                  } {periodPronoun} {period}
+                  )}>${Math.abs(targetSpend - spentActivePeriod).toFixed(2).toLocaleString()}
+                  <span className="font-normal">
+                    {
+                      targetSpend < spentActivePeriod ? ' over' : ' left'
+                    }
+                  </span></span> {periodPronoun} {period}
                 </div>
               </> :
               <span className="ml-2">
@@ -89,13 +122,13 @@ const EnvelopeItem = ({
             }
           </div>
         </div>
-        <div className="ml-4 text-xl flex-shrink-0 text-right">
+        <div className="md:ml-4 ml-11 mt-2 md:mt-0 text-xl flex-shrink-0 text-right">
           {
             spentActivePeriod !== undefined ?
             <>
             <span className={classNames(
               'font-normal',
-              spentActivePeriod > targetSpend ? 'text-red-600' : 'text-gray-400',
+              'text-gray-400',
               loggedSpendBlur.get() ? `bg-yellow-50` : `bg-white`,
             )}>
               ${(spentActivePeriod || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}
@@ -258,47 +291,49 @@ const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
                 className="h-10 w-10" /> 
             </button>
           </span>
-          <button type="submit"
-            style={{marginTop: 2, width: 150}}
-            onClick={() => {
-              onSubmit(amountState.get(), activePeriodType.get())
-              onCancelHandler()
-            }}
-            className={classNames(
-              'inline-block',
-              'w-full py-2.5 mr-2 ml-5 mr-4 text-sm leading-5 font-medium text-black rounded-lg',
-              'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-gray-800 ring-white ring-opacity-60',
-              'bg-gray-800 hover:bg-gray-700 ease-in text-white px-3'
-            )}>
-              {
-                amountState.get() < 0 ?
-                'Log Addition' : 'Log Spend'
-              }
-          </button>
-          <span className="inline-block md:ml-0 ml-6" style={{width: 225}}>
-            <Tab.Group onChange={(index: number) => {
-              const periodType = Object.keys(periodLoggedLabel(period))[index]
-              activePeriodType.set(periodType as ActivePeriodType)
-            }}>
-              <Tab.List className="flex p-1 bg-gray-800 rounded-xl">
-                {Object.keys(periodLoggedLabel(period)).map((periodType: string) => (
-                  <Tab
-                    key={periodType}
-                    className={({ selected }) =>
-                      classNames(
-                        'w-full py-2 text-sm leading-5 font-medium text-black rounded-lg',
-                        'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-gray-700 ring-white ring-opacity-60',
-                        selected
-                          ? 'bg-white shadow'
-                          : 'text-white hover:bg-white/[0.12] hover:text-white'
-                      )
-                    }
-                >
-                  {periodLoggedLabel(period)[periodType as ActivePeriodType]}
-                </Tab>
-              ))}
-            </Tab.List>
-            </Tab.Group>
+          <span className="whitespace-nowrap md:mt-0 mt-1 inline-block">
+            <button type="submit"
+              style={{marginTop: 2, width: 150}}
+              onClick={() => {
+                onSubmit(amountState.get(), activePeriodType.get())
+                onCancelHandler()
+              }}
+              className={classNames(
+                'inline-block',
+                'w-full py-2.5 mr-2 md:ml-5 ml-4 mr-4 text-sm leading-5 font-medium text-black rounded-lg',
+                'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-gray-800 ring-white ring-opacity-60',
+                'bg-gray-800 hover:bg-gray-700 ease-in text-white px-3'
+              )}>
+                {
+                  amountState.get() < 0 ?
+                  'Deposit' : 'Withdraw'
+                }
+            </button>
+            <span className="inline-block md:ml-0 ml-6" style={{width: 225}}>
+              <Tab.Group onChange={(index: number) => {
+                const periodType = Object.keys(periodLoggedLabel(period))[index]
+                activePeriodType.set(periodType as ActivePeriodType)
+              }}>
+                <Tab.List className="flex p-1 bg-gray-800 rounded-xl">
+                  {Object.keys(periodLoggedLabel(period)).map((periodType: string) => (
+                    <Tab
+                      key={periodType}
+                      className={({ selected }) =>
+                        classNames(
+                          'w-full py-2 text-sm leading-5 font-medium text-black rounded-lg',
+                          'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-gray-700 ring-white ring-opacity-60',
+                          selected
+                            ? 'bg-white shadow'
+                            : 'text-white hover:bg-white/[0.12] hover:text-white'
+                        )
+                      }
+                  >
+                    {periodLoggedLabel(period)[periodType as ActivePeriodType]}
+                  </Tab>
+                ))}
+              </Tab.List>
+              </Tab.Group>
+            </span>
           </span>
         </div>
         <div className="flex-shrink-0">

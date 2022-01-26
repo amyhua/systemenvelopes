@@ -16,20 +16,26 @@
     "budget_id": 2,
     "name": "Groceries",
     "target": 200,
-    "spent": 190.5
+    "period": "month",
+    "spent_this_period": 100.5,
+    "spent_last_period": 190.5
   }, {
     "id": 11,
     "user_id": 1,
     "budget_id": 2,
     "name": "Entertainment",
     "target": 300,
-    "spent": 100
+    "period": "month",
+    "spent_this_period": 100,
+    "spent_last_period": 290.5
   }, {
     "id": 12,
     "user_id": 1,
     "budget_id": 2,
     "name": "Replenish House",
     "target": 150,
-    "spent": 40.5
+    "period": "month",
+    "spent_this_period": 10,
+    "spent_last_period": 190.5
   }]
 }

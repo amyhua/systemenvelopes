@@ -15,7 +15,9 @@ interface BudgetItem {
   budget_id: number;
   name: string;
   target: number;
-  spent: number;
+  period: EnvelopePeriod;
+  spent_this_period: number;
+  spent_last_period: number;
 }
 
 const User = () => {
@@ -40,15 +42,16 @@ const User = () => {
       .then(r => r.json())
       .then(budgetItems => {
         console.log('items', budgetItems)
-        budgetItemsState.set(budgetItems)
+        budgetItemsState.set(budgetItems as BudgetItem[])
       })
     }
   }, [username])
+  
   if (budgetItemsState.get().length == 0) return null;
-  console.log('log', budgetItemsState.get())
 
+  const budgetPeriod = budgetItemsState.get()[0].period
   return (
-    <main className="md:container my-5 mx-auto">
+    <main className="md:container my-5 mx-auto px-4">
       <div className={styles.budget}>
         <div className="mb-6">
           <span className="text-2xl font-semibold">
@@ -70,22 +73,23 @@ const User = () => {
         </h2>
         <nav className="mt-3">
           <button type="button" className="rounded-md text-gray-700 bg-gray-100 mr-3 px-2 py-1">
-            this month
+            this {budgetPeriod}
           </button>
           <button type="button" className="rounded-md text-gray-400
             hover:text-gray-700 hover:bg-gray-100
             mr-3 px-2 py-1">
-            last month
+            last {budgetPeriod}
           </button>
         </nav>
         {
           budgetItemsState.map((itemState: State, i: number) => {
             const item = itemState.get() as BudgetItem
-            return <EnvelopeItem key={i} name={item.name}
-              period={EnvelopePeriod.Month}
-              periodType={ActivePeriodType.This}
-              spentActivePeriod={item.spent}
+            return <EnvelopeItem key={i}
+              name={item.name}
               targetSpend={item.target}
+              period={budgetPeriod}
+              thisPeriodSpent={item.spent_this_period}
+              lastPeriodSpent={item.spent_last_period}
             />
           })
         }
