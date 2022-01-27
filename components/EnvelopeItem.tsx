@@ -1,56 +1,21 @@
-import { Tab } from '@headlessui/react'
 import { useState, State } from '@hookstate/core';
-import { MailIcon, MailOpenIcon, PencilIcon, PlusCircleIcon, MinusCircleIcon } from '@heroicons/react/outline'
-import { ChartBarIcon, PlusIcon, CurrencyDollarIcon } from '@heroicons/react/solid'
-import LogSpendButton from './LogSpendButton';
+import { MailIcon, MailOpenIcon, PencilIcon } from '@heroicons/react/outline'
+import { ChartBarIcon } from '@heroicons/react/solid'
 import { classNames } from '../utils/app-utils';
-import styles from './EnvelopeItem.module.css';
-
-interface EnvelopeItemDatum {
-  name: string;
-  priority?: number
-}
-
-export enum EnvelopePeriod {
-  Month = 'month',
-  Week = 'week',
-  Year = 'year'
-}
-
-export enum ActivePeriodType {
-  This = 'this',
-  Last = 'last'
-}
-
-const EnvelopeProgressBar = ({
-  targetSpend,
-  spentActivePeriod
-}: {
-  targetSpend: number,
-  spentActivePeriod: number
-}) => {
-  const percent100 = Math.round((spentActivePeriod/targetSpend) * 100);
-  return (
-    <div className="inline-block align-top
-      mt-2
-      mr-2 bg-green-500 rounded-full" style={{width: 100}}>
-      <div
-        className={`bg-slate-500 text-xs opacity-0.6 font-medium text-slate-300 text-center p-0.25 leading-none rounded-l-full`}
-        style={{
-          width: percent100,
-          height: 5,
-        }}></div>
-    </div>
-  )
-}
+import { updateBudgetItem } from '../utils/fetch-utils'
+import { EnvelopePeriod, ActivePeriodType } from '../types';
+import LogSpendForm from './LogSpendForm';
+import ProgressBar from './ProgressBar';
 
 const EnvelopeItem = ({
+  id,
   name,
   targetSpend=0,
   period=EnvelopePeriod.Month,
   thisPeriodSpent=0,
   lastPeriodSpent=0,
 }: {
+  id: number | string,
   name: string,
   targetSpend: number,
   period: EnvelopePeriod,
@@ -59,15 +24,26 @@ const EnvelopeItem = ({
 }) => {
   const startLog: State = useState(false);
   const loggedSpendBlur: State = useState(false);
+  const thisPeriodSpentState: State = useState(thisPeriodSpent)
+  const lastPeriodSpentState: State = useState(lastPeriodSpent)
   const periodType: State = useState(ActivePeriodType.This)
-  const spentActivePeriod = periodType.get() === ActivePeriodType.This ? thisPeriodSpent : lastPeriodSpent
+  const spentActivePeriod = periodType.get() === ActivePeriodType.This ? thisPeriodSpentState.get() : lastPeriodSpentState.get()
   const spentHealthTextColorClassName = spentActivePeriod !== undefined &&
   targetSpend < spentActivePeriod ?
   'text-red-500' : 'text-green-500';
   const periodPronoun = periodType.get() === ActivePeriodType.This ? 'this' : 'last'
-  const onLogSpendFormSubmit = (amount:number, periodType: ActivePeriodType): void => {
-    console.log('onLogSpendFormSubmit', amount, periodType)
-    loggedSpendBlur.set(true)
+  const onLogSpendFormSubmit = (totalSpent:number, periodType: ActivePeriodType): void => {
+    updateBudgetItem(id, {
+      [periodType === ActivePeriodType.This ? 'spent_this_period' : 'spent_last_period']: totalSpent
+    })
+    .then((r: any) => r.json())
+    .then(budgetItem => {
+      if (periodType === ActivePeriodType.This) {
+        thisPeriodSpentState.set(budgetItem.spent_this_period)
+      } else {
+        lastPeriodSpentState.set(budgetItem.spent_last_period)
+      }
+    })
   }
   const onLogSpendFormCancel = () => {
     console.log('cancel')
@@ -103,17 +79,19 @@ const EnvelopeItem = ({
                   'ml-2',
                   'md:mt-0 mt-1 align-bottom inline-block'
                 )}>
-                  <EnvelopeProgressBar targetSpend={targetSpend} spentActivePeriod={spentActivePeriod} />
+                  <ProgressBar target={targetSpend} spent={spentActivePeriod} />
                   <span className={classNames(
                     `font-semibold transition`,
                     spentHealthTextColorClassName,
                     loggedSpendBlur.get() ? `bg-yellow-50` : `bg-white`,
                   )}>${Math.abs(targetSpend - spentActivePeriod).toFixed(2).toLocaleString()}
+                  </span>
                   <span className="font-normal">
                     {
                       targetSpend < spentActivePeriod ? ' over' : ' left'
                     }
-                  </span></span> {periodPronoun} {period}
+                  </span>{' '}
+                  
                 </div>
               </> :
               <span className="ml-2">
@@ -167,239 +145,43 @@ const EnvelopeItem = ({
           onSubmit={onLogSpendFormSubmit}
           onCancelForm={onLogSpendFormCancel}
           period={period}
+          targetSpend={targetSpend}
+          thisPeriodSpent={thisPeriodSpentState.get()}
+          lastPeriodSpent={lastPeriodSpentState.get()}
         />
       }
     </div>
   )
 }
-
-const toPeriodLabel = (period: EnvelopePeriod): string => {
-  switch (period) {
-    case EnvelopePeriod.Week:
-      return 'week'
-    case EnvelopePeriod.Month:
-      return 'month'
-    case EnvelopePeriod.Year:
-      return 'year'
-    default:
-      return 'UNDEFINED PERIOD LABEL ERROR'
-  }
-}
-
-const periodLoggedLabel = (period: EnvelopePeriod) => ({
-  [ActivePeriodType.This]: `This ${toPeriodLabel(period)}`,
-  [ActivePeriodType.Last]: `Last ${toPeriodLabel(period)}`,
-});
-
-const LogSpendForm = ({ onSubmit, period, onCancelForm }: {
-  onSubmit: (amount: number, periodType: ActivePeriodType) => void,
-  period: EnvelopePeriod,
-  onCancelForm: () => void
-}) => {
-  const amountState: State = useState(0)
-  const amountOnFocus: State = useState(false)
-  const amountChangeBlur: State = useState(false)
-  const cancelling: State = useState(false)
-  const activePeriodType: State = useState(ActivePeriodType.This)
-  const amountDeltaOnClickFn = (delta: number) => () => {
-    amountState.set(amountState.get() + delta)
-    amountChangeBlur.set(true)
-  }
-  const onCancelHandler = () => {
-    cancelling.set(true)
-    setTimeout(() => {
-      onCancelForm()
-    }, 500)
-  }
-  if (amountChangeBlur.get()) {
-    setTimeout(() => amountChangeBlur.set(false), 75);
-  }
-  return (
-    <div className={`${styles.logSpendForm} spend-form ml-3 mb-5 h-auto ${
-      cancelling.get() ? styles.cancelling : ''
-    }`} style={{
-      overflow: 'hidden',
-      transition: 'height 0.3s ease-in-out, margin-top 0.3s ease-in-out, margin-bottom 0.3s ease-in-out'
-    }}>
-      <form onSubmit={(e) => {
-        e.preventDefault()
-        onSubmit(amountState.get(), activePeriodType.get())
-        onCancelHandler()
-      }}>
-        <div className="mb-1 mt-5">
-          <span className="inline-block align-middle mb-2">
-            <button
-              type="button"
-              className="ml-3 relative inline-flex items-center
-                align-top mt-1
-                font-medium
-                text-gray-700 hover:text-green-500
-                "
-            >
-              <MinusCircleIcon
-                onClick={() => {
-                  amountState.set(amountState.get() - 1)
-                  amountChangeBlur.set(true)
-                }}
-                className="h-10 w-10" /> 
-            </button>
-            {
-              amountOnFocus.get() ?
-              <input
-                style={{width: 150}}
-                className="text-4xl mt-1 text-gray-700 text-center inline-block"
-                type="number"
-                value={amountState.get() === 0 ? '' : amountState.get()}
-                autoFocus={true}
-                onChange={e => amountState.set(Number(e.target.value))}
-                onFocus={() => amountOnFocus.set(true)}
-                onBlur={() => amountOnFocus.set(false)}
-              /> :
-              <span
-                style={{width: 150}}
-                onClick={() => amountOnFocus.set(true)}
-                className={`text-center inline-block text-gray-700 ${
-                  amountState.get() > 999 ? 'mt-2 text-2xl' : 'mt-1 text-4xl'
-                }`}>
-                  <span className={`
-                    ${amountChangeBlur.get() ? (
-                      amountState.get() < 0 ? 'text-green-500' : 'text-red-500'
-                    ) : 
-                      'text-gray-700'
-                    } 
-                    ease-in-out
-                  `}>
-                    ${
-                      Number(amountState.get().toFixed(2)).toLocaleString(undefined, {minimumFractionDigits: 2})
-                    }
-                  </span>
-              </span>
-            }
-            <button
-              type="button"
-              className="relative inline-flex items-center
-                mr-1 align-top mt-1
-                font-medium
-                text-gray-700 hover:text-red-500
-                "
-            >
-              <PlusCircleIcon
-                onClick={() => {
-                  amountState.set(amountState.get() + 1)
-                  amountChangeBlur.set(true)
-                }}
-                className="h-10 w-10" /> 
-            </button>
-          </span>
-          <span className="whitespace-nowrap md:mt-0 mt-1 inline-block">
-            <button type="submit"
-              style={{marginTop: 2, width: 150}}
-              onClick={() => {
-                onSubmit(amountState.get(), activePeriodType.get())
-                onCancelHandler()
-              }}
-              className={classNames(
-                'inline-block',
-                'w-full py-2.5 mr-2 md:ml-5 ml-4 mr-4 text-sm leading-5 font-medium text-black rounded-lg',
-                'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-gray-800 ring-white ring-opacity-60',
-                'bg-gray-800 hover:bg-gray-700 ease-in text-white px-3'
-              )}>
-                {
-                  amountState.get() < 0 ?
-                  'Deposit' : 'Withdraw'
-                }
-            </button>
-            <span className="inline-block md:ml-0 ml-6" style={{width: 225}}>
-              <Tab.Group onChange={(index: number) => {
-                const periodType = Object.keys(periodLoggedLabel(period))[index]
-                activePeriodType.set(periodType as ActivePeriodType)
-              }}>
-                <Tab.List className="flex p-1 bg-gray-800 rounded-xl">
-                  {Object.keys(periodLoggedLabel(period)).map((periodType: string) => (
-                    <Tab
-                      key={periodType}
-                      className={({ selected }) =>
-                        classNames(
-                          'w-full py-2 text-sm leading-5 font-medium text-black rounded-lg',
-                          'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-gray-700 ring-white ring-opacity-60',
-                          selected
-                            ? 'bg-white shadow'
-                            : 'text-white hover:bg-white/[0.12] hover:text-white'
-                        )
-                      }
-                  >
-                    {periodLoggedLabel(period)[periodType as ActivePeriodType]}
-                  </Tab>
-                ))}
-              </Tab.List>
-              </Tab.Group>
-            </span>
-          </span>
-        </div>
-        <div className="flex-shrink-0">
-          <div className="mt-4" style={{marginLeft: 16}}>
-            <span className="relative z-0 bg-gray-700 text-white inline-flex shadow-sm rounded-md">
-              <button
-                type="button"
-                onClick={amountDeltaOnClickFn(5)}
-                className="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50
-                  focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-              >
-                +$5
-              </button>
-              <button
-                type="button"
-                onClick={amountDeltaOnClickFn(10)}
-                className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-              >
-                +$10
-              </button>
-              <button
-                type="button"
-                onClick={amountDeltaOnClickFn(50)}
-                className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-              >
-                +$50
-              </button>
-              <button
-                type="button"
-                onClick={amountDeltaOnClickFn(100)}
-                className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-              >
-                +$100
-              </button>
-              <button
-                type="button"
-                onClick={amountDeltaOnClickFn(500)}
-                className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-              >
-                +$500
-              </button>
-              <button
-                type="button"
-                onClick={amountDeltaOnClickFn(1000)}
-                className="-ml-px relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-              >
-                +$1K
-              </button>
-              <button
-                type="button"
-                onClick={amountDeltaOnClickFn(amountState.get() * -1)}
-                className="-ml-px relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-              >
-                Reset
-              </button>
-            </span>
-          </div>
-          <div className="mt-4 ml-5 text-sm">
-            <a href="#"
-            onClick={onCancelHandler}
-            className="underline text-gray-500 hover:text-gray-800">Cancel</a>
-          </div>
-        </div>
-      </form>
-    </div>
-  )
-}
+/*
+FEATURES/
+search what you bought by hashtags, source
+- a sense of where I'm spending my money more
+- ability to search by hashtag of all the transactions i made
+    for a particular category
+    people don't wanna put stuff in different fields
+    e.g. pans, #amazon. can search by hashtag for those txns
+  - analyze their data via hashtags
+  - date: should be separate field
+      - set to today by default, but changeable
+  - stacked bar chart of
+      expected (envelope targets) vs actual
+  - people struggle with analyzing their own data
+- transport transaction data via spreadsheet
+    - export spend items
+    - import spend items
+- if they underspent in a category
+  have them move it to a savings/extras account
+    "you saved $X this month by underspending in Groceries, xxx, xxx last month"
+    and you can leave it in "savings" pot
+      which you can "withdraw" from if you exceed it
+      and have a "savings pot" which will incentivize people to save
+LTR
+  - some calculators, for how much they need to save for different things
+    - e.g., if you want to buy a car, a house, a down payment
+    - how many years, months, dates
+    - goal setting for people
+    - give them goals
+*/
 
 export default EnvelopeItem
