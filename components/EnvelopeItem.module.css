@@ -1,15 +1,4 @@
-.logSpendForm {
-  transition: height 0.3s ease-in-out, margin-top 0.3s ease-in-out, margin-bottom 0.3s ease-in-out;
-  height: 330px;
-}
-.cancelling {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  height: 0 !important;
-}
-
-@media (max-width: 768px) {
-  .logSpendForm {
-    height: 358px;
-  }
+.container:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
 }

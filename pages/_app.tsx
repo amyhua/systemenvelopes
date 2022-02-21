@@ -5,7 +5,10 @@ import { AppProps } from 'next/app'
 initAppUtils()
 
 function MyApp({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />
+  return <>
+    <div id="modal-root" />
+    <Component {...pageProps} />
+  </>
 }
 
 export default MyApp

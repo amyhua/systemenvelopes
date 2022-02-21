@@ -3,7 +3,7 @@
     {
       "id": 1,
       "username": "amy",
-      "budget_ids": [
+      "budgetIds": [
         2
       ]
     }
@@ -11,41 +11,41 @@
   "budgets": [
     {
       "id": 2,
-      "user_id": 1,
+      "userId": 1,
       "period": "month",
       "name": "Monthly"
     }
   ],
-  "budget_items": [
+  "budget_envelopes": [
     {
       "id": 10,
-      "user_id": 1,
-      "budget_id": 2,
+      "userId": 1,
+      "budgetId": 2,
       "name": "Groceries",
-      "target": 300,
+      "target": 401,
       "period": "month",
-      "spent_this_period": 113,
-      "spent_last_period": 90.52
+      "thisPeriodSpent": 50,
+      "lastPeriodSpent": 94.52
     },
     {
       "id": 11,
-      "user_id": 1,
-      "budget_id": 2,
+      "userId": 1,
+      "budgetId": 2,
       "name": "Entertainment",
       "target": 300,
       "period": "month",
-      "spent_this_period": 100,
-      "spent_last_period": 290.5
+      "thisPeriodSpent": 243,
+      "lastPeriodSpent": 290.5
     },
     {
       "id": 12,
-      "user_id": 1,
-      "budget_id": 2,
+      "userId": 1,
+      "budgetId": 2,
       "name": "Replenish House",
       "target": 150,
       "period": "month",
-      "spent_this_period": 10,
-      "spent_last_period": 190.5
+      "thisPeriodSpent": 0,
+      "lastPeriodSpent": 190.5
     }
   ]
 }

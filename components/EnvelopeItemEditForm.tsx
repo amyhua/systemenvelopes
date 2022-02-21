@@ -1,11 +1,13 @@
 import { useState, State } from '@hookstate/core';
 
-const EnvelopeItemEditModal = ({ defaultName }: {
-  defaultName: string,
+const EnvelopeItemEditForm = ({ name, targetSpend }: {
+  name: string,
+  targetSpend: number,
 }) => {
-  const nameState: State = useState(defaultName)
+  const nameState: State = useState(name)
+  const targetSpendState: State = useState(targetSpend)
   return (
-    <section className="ml-7 mt-4">
+    <section className="relative p-7 bg-white rounded max-w-sm mx-auto">
       <label htmlFor="name" className="block text-sm font-medium text-gray-500">
         Name
       </label>
@@ -24,4 +26,4 @@ const EnvelopeItemEditModal = ({ defaultName }: {
   )
 }
 
-export default EnvelopeItemEditModal
+export default EnvelopeItemEditForm

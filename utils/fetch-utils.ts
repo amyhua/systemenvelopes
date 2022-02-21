@@ -11,5 +11,5 @@ const patchFetch = (path: string, body: any) =>
   })
 
 export const updateBudgetItem = (id: number | string, body: any = {}) => {
-  return patchFetch(`/budget_items/${id}`, body)
+  return patchFetch(`/budget_envelopes/${id}`, body)
 }
